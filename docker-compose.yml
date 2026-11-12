@@ -1,0 +1,22 @@
+services:
+  crm:
+    build: .
+    env_file: .env
+    environment:
+      GOOGLE_SHEETS_CREDENTIALS_PATH: /run/secrets/google-service-account.json
+    volumes:
+      - type: bind
+        source: ${GOOGLE_SHEETS_CREDENTIALS_PATH:-./secrets/google-service-account.json}
+        target: /run/secrets/google-service-account.json
+        read_only: true
+        bind:
+          create_host_path: false
+    ports:
+      - "127.0.0.1:8000:8000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os, urllib.request; request = urllib.request.Request('http://127.0.0.1:8000/health', headers={'X-Webhook-Secret': os.environ['WEBHOOK_SECRET']}); urllib.request.urlopen(request, timeout=4).close()"]
+      interval: 30s
+      timeout: 5s
+      start_period: 45s
+      retries: 3
